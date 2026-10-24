@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111111">
+<title>Painel 4x4</title>
+<style>
+:root{--bg:#0b0b0d;--panel:#17171b;--panel2:#202026;--red:#e53945;--muted:#aaaab4;--line:#33333b;--green:#55d68b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f6f6f7;font:16px system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:22px 18px 16px;background:linear-gradient(135deg,#19191f,#101013);border-bottom:2px solid var(--red);position:sticky;top:0;z-index:2}
+h1{font-size:25px;margin:0 0 5px;letter-spacing:.4px}header p{margin:0;color:var(--muted);font-size:13px}
+main{max-width:760px;margin:auto;padding:15px 14px 40px}.tabs{display:flex;gap:8px;overflow:auto;margin-bottom:15px}
+button,.tab{border:0;border-radius:10px;padding:11px 13px;background:var(--panel2);color:#fff;font:inherit;cursor:pointer}
+button.primary,.tab.active{background:var(--red);font-weight:700}button.small{padding:7px 10px;font-size:13px}button.danger{background:#512027;color:#ffdce0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:15px;margin-bottom:13px}
+h2{font-size:18px;margin:0 0 12px}h3{font-size:16px;margin:0 0 8px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+label{display:block;color:var(--muted);font-size:13px;margin-bottom:5px}
+input,select,textarea{width:100%;background:#0e0e11;color:#fff;border:1px solid #41414a;border-radius:9px;padding:11px;font:inherit}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.muted{color:var(--muted);font-size:13px}.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:#101014;border-radius:10px;padding:11px;text-align:center}.stat b{display:block;font-size:20px}.stat span{color:var(--muted);font-size:12px}
+.playerrow{display:flex;align-items:center;justify-content:space-between;gap:10px}.playerrow+.playerrow{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}.playername{font-weight:700}.pill{display:inline-block;border-radius:99px;padding:3px 8px;background:#292930;color:#ddd;font-size:12px}
+.moneyplus{color:var(--green)}.moneyminus{color:#ff737d}.hidden{display:none!important}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;padding:9px 5px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:500}
+.empty{padding:20px 8px;text-align:center;color:var(--muted)}footer{text-align:center;color:#777;font-size:12px;padding:18px}
+@media(max-width:420px){.grid{grid-template-columns:1fr}.statgrid{grid-template-columns:repeat(3,1fr)}.stat b{font-size:17px}}
+</style>
+</head>
+<body>
+<header><h1>PAINEL <span style="color:var(--red)">4×4</span></h1><p>Estatísticas, histórico e saldo das partidas</p></header>
+<main>
+<div class="tabs">
+<button class="tab active" data-tab="home">Resumo</button><button class="tab" data-tab="match">Nova partida</button><button class="tab" data-tab="players">Jogadores</button><button class="tab" data-tab="history">Histórico</button>
+</div>
+<section id="home">
+<div class="card"><h2>Resumo geral</h2><div class="statgrid">
+<div class="stat"><b id="totalMatches">0</b><span>Partidas</span></div><div class="stat"><b id="totalWins">0</b><span>Vitórias do grupo</span></div><div class="stat"><b id="balance">R$ 0,00</b><span>Saldo do grupo</span></div>
+</div></div>
+<div class="card"><h2>Ranking de jogadores</h2><div id="ranking"></div></div>
+<div class="card"><h2>Últimas partidas</h2><div id="recent"></div></div>
+<div class="actions"><button class="primary" onclick="showTab('match')">＋ Registrar partida</button><button onclick="exportData()">Exportar backup</button><button onclick="document.getElementById('importFile').click()">Importar backup</button><input id="importFile" type="file" accept="application/json" class="hidden"></div>
+<p class="muted">Os dados ficam salvos neste navegador do celular. Use “Exportar backup” para guardar uma cópia.</p>
+</section>
+<section id="match" class="hidden">
+<div class="card"><h2>Registrar partida</h2>
+<div class="grid"><div><label>Data</label><input id="matchDate" type="date"></div><div><label>Resultado do grupo</label><select id="groupResult"><option value="win">Vitória</option><option value="loss">Derrota</option></select></div></div>
+<div style="margin-top:12px"><label>Observação (opcional)</label><input id="matchNote" placeholder="Ex.: mapa, modo, observações"></div>
+<h3 style="margin-top:18px">Estatísticas individuais</h3><p class="muted">Preencha eliminações e mortes para cada jogador.</p><div id="matchPlayers"></div>
+<h3 style="margin-top:18px">Financeiro do grupo</h3><div class="grid"><div><label>Valor ganho (R$)</label><input id="gain" type="number" min="0" step="0.01" placeholder="0,00"></div><div><label>Valor perdido (R$)</label><input id="loss" type="number" min="0" step="0.01" placeholder="0,00"></div></div>
+<div class="actions"><button class="primary" onclick="saveMatch()">Salvar partida</button><button onclick="clearMatch()">Limpar formulário</button></div>
+</div></section>
+<section id="players" class="hidden"><div class="card"><h2>Jogadores</h2><p class="muted">O painel vem com os quatro jogadores configurados.</p><div id="playersList"></div></div></section>
+<section id="history" class="hidden"><div class="card"><h2>Histórico de partidas</h2><div class="grid"><div><label>Filtrar resultado</label><select id="filterResult" onchange="renderHistory()"><option value="all">Todos</option><option value="win">Vitórias</option><option value="loss">Derrotas</option></select></div><div><label>Ordenação</label><select id="sortHistory" onchange="renderHistory()"><option value="new">Mais recentes</option><option value="old">Mais antigas</option></select></div></div><div id="historyList" style="margin-top:12px"></div><div class="actions"><button class="danger" onclick="clearAll()">Apagar todos os dados</button></div></div></section>
+<footer>Painel 4x4 • versão para navegador</footer>
+</main>
+<script>
+const defaultNames=['Ryan','Dog','Gordin','Mini J'];
+let data={players:defaultNames.map(name=>({name})),matches:[]};
+try{const saved=localStorage.getItem('painel4x4');if(saved){const parsed=JSON.parse(saved);if(parsed&&Array.isArray(parsed.players)&&Array.isArray(parsed.matches))data=parsed}}catch(e){}
+const brl=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const today=()=>new Date().toLocaleDateString('en-CA');
+document.getElementById('matchDate').value=today();
+function persist(){localStorage.setItem('painel4x4',JSON.stringify(data));renderAll()}
+function showTab(name){document.querySelectorAll('section').forEach(s=>s.classList.add('hidden'));document.getElementById(name).classList.remove('hidden');document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));if(name==='match')renderMatchPlayers();if(name==='history')renderHistory()}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+function renderMatchPlayers(){document.getElementById('matchPlayers').innerHTML=data.players.map((p,i)=>`<div class="card" style="padding:12px;margin:9px 0"><h3>${esc(p.name)}</h3><div class="grid"><div><label>Eliminações</label><input type="number" min="0" step="1" id="kills${i}" value="0"></div><div><label>Mortes</label><input type="number" min="0" step="1" id="deaths${i}" value="0"></div></div></div>`).join('')}
+function saveMatch(){const date=document.getElementById('matchDate').value||today();const result=document.getElementById('groupResult').value;const players=data.players.map((p,i)=>({name:p.name,kills:Math.max(0,Number(document.getElementById('kills'+i).value)||0),deaths:Math.max(0,Number(document.getElementById('deaths'+i).value)||0)}));const gain=Math.max(0,Number(document.getElementById('gain').value)||0),loss=Math.max(0,Number(document.getElementById('loss').value)||0);data.matches.push({id:Date.now(),date,result,players,gain,loss,note:document.getElementById('matchNote').value.trim()});persist();clearMatch();showTab('home');}
+function clearMatch(){document.getElementById('matchDate').value=today();document.getElementById('groupResult').value='win';document.getElementById('matchNote').value='';document.getElementById('gain').value='';document.getElementById('loss').value='';renderMatchPlayers()}
+function stats(){const all=data.matches;let wins=all.filter(m=>m.result==='win').length;let balance=all.reduce((s,m)=>s+(Number(m.gain)||0)-(Number(m.loss)||0),0);let rank=data.players.map(p=>{let matches=all.filter(m=>m.players.some(x=>x.name===p.name));let k=0,d=0,w=0,l=0;matches.forEach(m=>{const x=m.players.find(x=>x.name===p.name)||{};k+=x.kills||0;d+=x.deaths||0;if(m.result==='win')w++;else l++});return {name:p.name,k,d,kd:d?k/d:k,w,l,played:matches.length}}).sort((a,b)=>b.kd-a.kd);return {wins,balance,rank}}
+function renderAll(){const s=stats();document.getElementById('totalMatches').textContent=data.matches.length;document.getElementById('totalWins').textContent=s.wins;const bal=document.getElementById('balance');bal.textContent=brl(s.balance);bal.className=s.balance>=0?'moneyplus':'moneyminus';document.getElementById('ranking').innerHTML=s.rank.map((p,i)=>`<div class="playerrow"><div><span class="pill">#${i+1}</span> <span class="playername">${esc(p.name)}</span><div class="muted">${p.w}V • ${p.l}D • ${p.played} partidas</div></div><div style="text-align:right"><b>${p.kd.toFixed(2)}</b><div class="muted">K/D • ${p.k}E / ${p.d}M</div></div></div>`).join('');document.getElementById('recent').innerHTML=data.matches.length?data.matches.slice().sort((a,b)=>b.id-a.id).slice(0,4).map(matchCard).join(''):'<div class="empty">Nenhuma partida registrada ainda.</div>';document.getElementById('playersList').innerHTML=data.players.map((p,i)=>`<div class="playerrow"><div><span class="playername">${esc(p.name)}</span><div class="muted">Jogador ${i+1}</div></div><button class="small" onclick="renamePlayer(${i})">Renomear</button></div>`).join('');renderHistory()}
+function matchCard(m){const bal=(m.gain||0)-(m.loss||0);return `<div class="playerrow"><div><b>${dateBR(m.date)} <span class="pill">${m.result==='win'?'Vitória':'Derrota'}</span></b><div class="muted">${m.players.map(p=>`${esc(p.name)} ${p.kills}/${p.deaths}`).join(' · ')}${m.note?' · '+esc(m.note):''}</div></div><div style="text-align:right" class="${bal>=0?'moneyplus':'moneyminus'}"><b>${brl(bal)}</b><div><button class="small danger" onclick="deleteMatch(${m.id})">Excluir</button></div></div></div>`}
+function renderHistory(){const el=document.getElementById('historyList');if(!el)return;let ms=data.matches.slice();const f=document.getElementById('filterResult')?.value||'all';if(f!=='all')ms=ms.filter(m=>m.result===f);ms.sort((a,b)=>document.getElementById('sortHistory')?.value==='old'?a.id-b.id:b.id-a.id);el.innerHTML=ms.length?ms.map(matchCard).join(''):'<div class="empty">Nenhuma partida para mostrar.</div>'}
+function deleteMatch(id){if(confirm('Excluir esta partida?')){data.matches=data.matches.filter(m=>m.id!==id);persist()}}
+function renamePlayer(i){const n=prompt('Nome do jogador:',data.players[i].name);if(n&&n.trim()){const old=data.players[i].name;data.players[i].name=n.trim();data.matches.forEach(m=>m.players.forEach(p=>{if(p.name===old)p.name=n.trim()}));persist()}}
+function clearAll(){if(confirm('Tem certeza que deseja apagar todas as partidas e estatísticas?')){data.matches=[];persist()}}
+function dateBR(d){if(!d)return '';const a=d.split('-');return a.length===3?`${a[2]}/${a[1]}/${a[0]}`:d}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function exportData(){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='backup-painel4x4.json';a.click();URL.revokeObjectURL(url)}
+document.getElementById('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const d=JSON.parse(await f.text());if(!Array.isArray(d.players)||!Array.isArray(d.matches))throw 0;if(confirm('Importar backup e substituir os dados atuais?')){data=d;persist();alert('Backup importado!')}}catch(err){alert('Não foi possível ler esse backup.')}e.target.value=''});
+renderAll();renderMatchPlayers();
+</script>
+</body></html>
